@@ -3,9 +3,10 @@ import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss.Data.Vector
 import State
 import Game
+import Settings
 
 main
- = play (InWindow "Astroid" (floor width2, floor height2) (100, 100))
+ = play (InWindow "Astroid" (floor sWidth, floor sHeight) (100, 100))
         black
         100
         initialState
@@ -13,9 +14,6 @@ main
         handleInput
         stepState
 
-width2, height2 :: Float
-width2  = 700
-height2 = 500
 
 ----- Rendering Functions -----
 

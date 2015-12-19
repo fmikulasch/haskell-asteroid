@@ -11,11 +11,6 @@ import Data.Fixed
 
 ----- Updating Functions -----
 
-
-width, height :: Float
-width  = 700
-height = 500
-
 stepState :: Float -> State -> State
 stepState t (State ship asteroids bullets keys gen)
     = applyInput
@@ -45,7 +40,7 @@ updateAsteroids t asteroids r s
 
     where newAsteroid =
             Asteroid (r * 100,s * 100)
-                     (s * width,r * height)
+                     (s * sWidth,r * sHeight)
                      (r * 100)
 
 moveAsteroid :: Float -> Asteroid -> Asteroid
@@ -69,10 +64,10 @@ updatePosition t pos vel size
 
 moveToScreen :: Point -> Float -> Point
 moveToScreen (x,y) s
-    | y - s >   height / 2 = (x, - height / 2 - s)
-    | y + s < - height / 2 = (x,   height / 2 + s)
-    | x - s >   width / 2  = (- width / 2 - s, y)
-    | x + s < - width / 2  = (  width / 2 + s, y)
+    | y - s >   sHeight / 2 = (x, - sHeight / 2 - s)
+    | y + s < - sHeight / 2 = (x,   sHeight / 2 + s)
+    | x - s >   sWidth / 2  = (- sWidth / 2 - s, y)
+    | x + s < - sWidth / 2  = (  sWidth / 2 + s, y)
     | otherwise  = (x,y)
 
 
