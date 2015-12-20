@@ -21,15 +21,18 @@ data Ship
         { shipVelocity   :: Vector -- Is a Tuple (x,y), defined in Gloss
         , shipPosition   :: Point  -- Point = Vector
         , shipRotation   :: Float
-        , shipDamaged    :: Bool
         , shipReload     :: Float
+        , shipExploding  :: Float
         }
 
 data Asteroid
         = Asteroid
-        { asteroidVelocity :: Vector
-        , asteroidPosition :: Point
-        , asteroidSize     :: Float
+        { asteroidVelocity  :: Vector
+        , asteroidPosition  :: Point
+        , asteroidRotation  :: Float
+        , asteroidMomentum  :: Float
+        , asteroidSize      :: Float
+        , asteroidExploding :: Float
         }
 
 data Bullet
@@ -50,5 +53,5 @@ initialState
     where initialShip = Ship (0,0)
                              (0,0)
                              (0 :: Float)
-                             False
+                             0
                              0

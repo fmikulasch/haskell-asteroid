@@ -7,8 +7,8 @@ import Settings
 
 main
  = play (InWindow "Astroid" (floor sWidth, floor sHeight) (100, 100))
-        black
-        100
+        sBGColor
+        sUpdate
         initialState
         drawState
         handleInput
@@ -25,29 +25,73 @@ drawState (State ship asteroids bullets _ _)
     ++ map drawBullet bullets
 
 drawAsteroid :: Asteroid -> Picture
-drawAsteroid (Asteroid _ (x,y) size)
+drawAsteroid (Asteroid _ (x,y) alpha _ size 0.0)
     = Color (dark white)
     $ Translate x y
-    $ ThickCircle 1 size
+    $ Rotate alpha
+    $ asteroidPicture size
+
+drawAsteroid (Asteroid _ pos  _ _ _ dead)
+    = drawExplosion pos dead
 
 drawBullet :: Bullet -> Picture
-drawBullet (Bullet _ (x,y) _)
+drawBullet (Bullet vel pos@(x,y) _)
     = Color white
     $ Translate x y
-    $ Circle 5
+    $ Line [(0,0),sBulletLength `mulSV` normalizeV vel]
 
 drawShip :: Ship -> Picture
-drawShip (Ship _ (x,y) alpha _ _)
+drawShip (Ship _ (x,y) alpha _ 0.0)
     = Color white
     $ Translate x y
     $ Rotate (-alpha) shipPicture
 
+drawShip (Ship _ pos _ _ dead)
+    = drawExplosion pos dead
+
+drawExplosion :: Point -> Float -> Picture
+drawExplosion (x,y) t
+    = Color white
+    $ Translate x y
+    $ Scale t t
+    $ Pictures
+    [ explosionPicture
+    , Scale t t
+    $ Rotate 1.2 explosionPicture
+    ]
+
 shipPicture :: Picture
 shipPicture
-    = Polygon
+    = Line
     [ (20,0)
     , (-10,10)
     , (-4,0)
     , (-10,-10)
     , (20,0)
+    ]
+
+asteroidPicture :: Float -> Picture
+asteroidPicture x
+    = Scale (x * 1/15) (x * 1/15)
+    $ Line
+    [ (11.0,7.0)
+    , (-2.0,12.0)
+    , (-11.0,9.0)
+    , (-17.0,-1.0)
+    , (-11.0,-13.0)
+    , (0.0,-10.0)
+    , (9.0,-12.0)
+    , (14.0,-3.0)
+    , (7.0,2.0)
+    , (11.0,7.0)
+    ]
+
+explosionPicture :: Picture
+explosionPicture
+    = Pictures
+    [ Line [from,normalizeV from + from]
+    | from <- [ a * b
+              | a <- [(1,3),(4,1),(1,8),(5,5)]
+              , b <- [(1,1),(1,-1),(-1,1),(-1,-1)]
+              ]
     ]
