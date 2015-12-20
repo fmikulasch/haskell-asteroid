@@ -4,6 +4,7 @@ import Graphics.Gloss.Data.Vector
 import State
 import Game
 import Settings
+import Data.Fixed
 
 main
  = play (InWindow "Astroid" (floor sWidth, floor sHeight) (100, 100))
@@ -23,6 +24,7 @@ drawState (State ship asteroids bullets _ _)
     $ drawShip ship
     : map drawAsteroid asteroids
     ++ map drawBullet bullets
+    ++ stars
 
 drawAsteroid :: Asteroid -> Picture
 drawAsteroid (Asteroid _ (x,y) alpha _ size 0.0)
@@ -51,13 +53,13 @@ drawShip (Ship _ pos _ _ dead)
 
 drawExplosion :: Point -> Float -> Picture
 drawExplosion (x,y) t
-    = Color white
+    = Color (makeColor 1.0 1.0 1.0 (1.0 - t / sExplosionTime))
     $ Translate x y
     $ Scale t t
     $ Pictures
-    [ explosionPicture
+    [ explosionPicture x y
     , Scale t t
-    $ Rotate 1.2 explosionPicture
+    $ Rotate 1.2 (explosionPicture x y)
     ]
 
 shipPicture :: Picture
@@ -86,12 +88,17 @@ asteroidPicture x
     , (11.0,7.0)
     ]
 
-explosionPicture :: Picture
-explosionPicture
-    = Pictures
+explosionPicture :: Float -> Float -> Picture
+explosionPicture x y
+    = let x' = x `mod'` 3
+          y' = y `mod'` 3 in
+    Pictures
     [ Line [from,normalizeV from + from]
     | from <- [ a * b
               | a <- [(1,3),(4,1),(1,8),(5,5)]
-              , b <- [(1,1),(1,-1),(-1,1),(-1,-1)]
+              , b <- [(1,1),(-1,x'),(- y',- 0.4),(1,- y')]
               ]
     ]
+
+stars :: [Picture]
+stars = []

@@ -22,7 +22,7 @@ sTurnSpeed = 2
 sAcceleration = 3
 sMaxSpeed = 200
 sReloadTime = 0.2
-sShipSize = 20
+sShipSize = 13
 
 -- Bullet settings
 sBulletSize, sBulletSpeed, sBulletLength, sBulletLife :: Float
@@ -33,8 +33,8 @@ sBulletLife   = 1
 
 -- Asteroid settings
 sAsteroidSize, sMinAsteroidSize, sAsteroidSpeed, sAsteroidRotation :: Float
-sAsteroidSize     = 100
-sMinAsteroidSize  = 25
+sAsteroidSize     = 50
+sMinAsteroidSize  = 10
 sAsteroidSpeed    = 100
 sAsteroidRotation = 3
 
