@@ -33,15 +33,15 @@ moveShip t (Ship vel pos alpha damage reload)
 
 updateAsteroids :: Float -> [Asteroid] -> Float -> Float -> [Asteroid]
 updateAsteroids t asteroids r s
-    = (if floor (4 * r) > length asteroids
+    = (if sMaxAsteroids * r > fromIntegral (length asteroids)
          then [newAsteroid]
          else [])
     ++ map (moveAsteroid t) asteroids
 
     where newAsteroid =
-            Asteroid (r * 100,s * 100)
+            Asteroid (r * sAsteroidSpeed,s * sAsteroidSpeed)
                      (s * sWidth,r * sHeight)
-                     (r * 100)
+                     (r * sAsteroidSize)
 
 moveAsteroid :: Float -> Asteroid -> Asteroid
 moveAsteroid t (Asteroid vel pos size)
@@ -55,7 +55,7 @@ updateBullets t = filter ((> 0) . bulletLife) . map (updateBullet t)
 updateBullet :: Float -> Bullet -> Bullet
 updateBullet t (Bullet vel pos life)
     = Bullet vel
-             (updatePosition t pos vel 5)
+             (updatePosition t pos vel sBulletSize)
              (life - t)
 
 updatePosition :: Float -> Point -> Vector -> Float -> Point
@@ -95,29 +95,29 @@ handleShip keys (Ship vel pos alpha damage reload)
 
           alpha' =
             if (SpecialKey KeyLeft) `elem` keys
-                then (alpha + 2) `mod'` 360
+                then (alpha + sTurnSpeed) `mod'` 360
                 else alpha
 
           alpha'' =
             if (SpecialKey KeyRight) `elem` keys
-                then (alpha - 2) `mod'` 360
+                then (alpha - sTurnSpeed) `mod'` 360
                 else alpha'
 
           reload' =
             if (SpecialKey KeySpace) `elem` keys
                 && reload < 0
-                then 0.5
+                then sReloadTime
                 else reload
 
 updateSpeed :: Vector -> Float -> Vector
 updateSpeed vel alpha
-    | magV vel' > 200 = vel
-    | otherwise       = vel'
-    where vel' = vel + (3 `mulSV` (unitVectorAtAngle . degToRad) alpha)
+    | magV vel' > sMaxSpeed = vel
+    | otherwise             = vel'
+    where vel' = vel + (sAcceleration `mulSV` (unitVectorAtAngle . degToRad) alpha)
 
 createBullet :: Ship -> [Bullet]
 createBullet (Ship _ pos alpha _ reload)
-    | reload < 0 = [Bullet (100 `mulSV` (unitVectorAtAngle . degToRad) alpha)
+    | reload < 0 = [Bullet (sBulletSpeed `mulSV` (unitVectorAtAngle . degToRad) alpha)
                            pos
                            2]
     | otherwise  = []
