@@ -16,6 +16,7 @@ data State
         , stateKeys      :: [Key]
         , randGen        :: StdGen
         }
+        | Menu
 
 data Ship
         = Ship
@@ -61,6 +62,6 @@ initialState
 
     where initialShip = Ship (0,0)
                              (0,0)
-                             (0 :: Float)
+                             90
                              0
                              0

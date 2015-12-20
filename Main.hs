@@ -11,7 +11,7 @@ main
  = play (InWindow "Asteroid" (floor sWidth, floor sHeight) (100, 100))
         sBGColor
         sUpdate
-        initialState
+        Menu
         drawState
         handleInput
         stepState
@@ -27,6 +27,12 @@ drawState (State ship asteroids bullets effects keys _)
     ++ map drawBullet bullets
     ++ map drawEffect effects
     ++ map drawAsteroid asteroids
+
+drawState Menu
+    = Pictures $
+    [ Color white $ Translate (-37) 10 $ Scale 0.3 0.3 $ Text "Play"
+    , Color white $ Translate (-50) (-15) $ Scale 0.1 0.1 $ Text "Press any key"
+    ] ++ stars
 
 drawAsteroid :: Asteroid -> Picture
 drawAsteroid (Asteroid _ (x,y) alpha _ size 0.0)

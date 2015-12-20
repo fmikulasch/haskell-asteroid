@@ -13,6 +13,10 @@ import Settings
 
 stepState :: Float -> State -> State
 stepState t (State ship asteroids bullets effects keys gen)
+    | shipExploding ship > sRespawnTime
+    = Menu
+
+    | otherwise
     = checkCollisions
     $ applyInput
     $ State (moveShip t ship)
@@ -25,6 +29,8 @@ stepState t (State ship asteroids bullets effects keys gen)
     where (r,gen')  = random gen  :: (Float, StdGen)
           (s,gen'') = random gen' :: (Float, StdGen)
 
+stepState _ Menu
+    = Menu
 
 --- Moving
 
@@ -248,6 +254,9 @@ handleInput (EventKey key keystate _ _)
             case keystate of
                 Up   -> filter ((/=) key) keys
                 Down -> key : keys
+
+handleInput (EventKey _ Down _ _) Menu
+    = initialState
 
 handleInput _ state = state
 

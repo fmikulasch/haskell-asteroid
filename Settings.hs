@@ -20,6 +20,9 @@ sRandGen = 1
 sStepSize :: Float
 sStepSize = 1 / fromIntegral sUpdate
 
+sRespawnTime :: Float
+sRespawnTime = 7
+
 -- Ship settings
 sTurnSpeed, sMaxSpeed, sAcceleration, sReloadTime, sShipSize :: Float
 sTurnSpeed = 2.5
@@ -51,5 +54,5 @@ sExplosionTime = 2.5
 
 sPulseTime, sPulseSpeed, sPulseDistance :: Float
 sPulseTime = 0.26
-sPulseSpeed = -0.3
+sPulseSpeed = -0.5
 sPulseDistance = 15
