@@ -5,9 +5,10 @@ import State
 import Game
 import Settings
 import Data.Fixed
+import Debug.Trace
 
 main
- = play (InWindow "Astroid" (floor sWidth, floor sHeight) (100, 100))
+ = play (InWindow "Asteroid" (floor sWidth, floor sHeight) (100, 100))
         sBGColor
         sUpdate
         initialState
@@ -19,12 +20,13 @@ main
 ----- Rendering Functions -----
 
 drawState :: State -> Picture
-drawState (State ship asteroids bullets _ _)
+drawState (State ship asteroids bullets effects keys _)
     = Pictures
     $ drawShip ship
-    : map drawAsteroid asteroids
+    : stars
     ++ map drawBullet bullets
-    ++ stars
+    ++ map drawEffect effects
+    ++ map drawAsteroid asteroids
 
 drawAsteroid :: Asteroid -> Picture
 drawAsteroid (Asteroid _ (x,y) alpha _ size 0.0)
@@ -33,7 +35,7 @@ drawAsteroid (Asteroid _ (x,y) alpha _ size 0.0)
     $ Rotate alpha
     $ asteroidPicture size
 
-drawAsteroid (Asteroid _ pos  _ _ _ dead)
+drawAsteroid (Asteroid _ pos _ _ _ dead)
     = drawExplosion pos dead
 
 drawBullet :: Bullet -> Picture
@@ -61,6 +63,16 @@ drawExplosion (x,y) t
     , Scale t t
     $ Rotate 1.2 (explosionPicture x y)
     ]
+
+drawEffect :: Effect -> Picture
+drawEffect (Pulse pos@(x,y) alpha time)
+    = Color (makeColor 1.0 1.0 1.0 (1.0 - time / sPulseTime))
+    $ Translate x' y'
+    $ Scale time time
+    $ Line [pos', pos' + 4 `mulSV` direction]
+    where direction = toVector alpha
+          (x',y') = pos - sPulseDistance `mulSV` direction
+          pos' = (10 * (x `mod'` 2), 10 * (y `mod'` 3))
 
 shipPicture :: Picture
 shipPicture
@@ -90,15 +102,32 @@ asteroidPicture x
 
 explosionPicture :: Float -> Float -> Picture
 explosionPicture x y
-    = let x' = x `mod'` 3
-          y' = y `mod'` 3 in
+    = let x' = x `mod'` 2
+          y' = y `mod'` 2 in
     Pictures
     [ Line [from,normalizeV from + from]
     | from <- [ a * b
-              | a <- [(1,3),(4,1),(1,8),(5,5)]
-              , b <- [(1,1),(-1,x'),(- y',- 0.4),(1,- y')]
+              | a <- [(1,3),(4,1),(2,8),(5,5)]
+              , b <- [(-1,1),(y',x'),(- y',- 0.4),(1,- y')]
               ]
     ]
 
 stars :: [Picture]
-stars = []
+stars =
+      [ Color sStarColor
+      $ Translate (x / 360 * sWidth - sWidth / 2)
+                  (y / 360 * sHeight - sHeight / 2)
+      $ Line [(0,0), (1,0)]
+      | (x,y) <- [ (227,351), (261,335), (315,359)
+                 , (15,69), (67,19), (162,4.6)
+                 , (209,335), (213,13), (290,302)
+                 , (199,351), (311,1), (47,350)
+                 , (300,3), (181,340), (351,15)
+                 , (316,50), (192,23), (20,295)
+                 , (30,50), (4,29), (60,5)
+                 , (122,61), (100,65), (240,190)
+                 , (145,120), (87,304), (92,61)
+                 , (89,170), (239,260), (120,122)
+                 , (178,188), (190,201), (170,160)
+                 ]
+      ]

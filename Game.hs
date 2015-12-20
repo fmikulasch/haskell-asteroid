@@ -1,11 +1,10 @@
-module Game (stepState, handleInput) where
+module Game (stepState, handleInput, toVector) where
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Geometry.Angle
 import System.Random
-import Debug.Trace
 import Data.Fixed
 import State
 import Settings
@@ -13,12 +12,13 @@ import Settings
 ----- Updating Functions -----
 
 stepState :: Float -> State -> State
-stepState t (State ship asteroids bullets keys gen)
+stepState t (State ship asteroids bullets effects keys gen)
     = checkCollisions
     $ applyInput
     $ State (moveShip t ship)
             (updateAsteroids t asteroids r s)
             (updateBullets t bullets)
+            (updateEffects t effects)
             keys
             gen''
 
@@ -52,12 +52,16 @@ updateAsteroids t asteroids r s
     ++ map (moveAsteroid t) asteroids
 
     where newAsteroid =
-            Asteroid (r * sAsteroidSpeed,s * sAsteroidSpeed)
-                     (s * sWidth,r * sHeight)
+            Asteroid ((r - 0.5) * sAsteroidSpeed,(s - 0.5) * sAsteroidSpeed)
+                     pos
                      0.0
                      (r * sAsteroidRotation)
-                     (r * sAsteroidSize)
+                     size
                      0.0
+          pos = if s < 0.5
+                    then ((s - 0.5) * sWidth, sHeight / 2 + size)
+                    else (sWidth / 2 + size, (r - 0.5) * sHeight)
+          size = s * sAsteroidSize + sMinAsteroidSize
 
 moveAsteroid :: Float -> Asteroid -> Asteroid
 moveAsteroid t (Asteroid vel pos alpha dalpha size 0.0)
@@ -69,12 +73,12 @@ moveAsteroid t (Asteroid vel pos alpha dalpha size 0.0)
                0.0
 
 moveAsteroid t (Asteroid _ pos _ _ _ dead)
-   = Asteroid (0,0)
-              pos
-              0.0
-              0.0
-              0.0
-              (dead + t)
+    = Asteroid (0,0)
+               pos
+               0.0
+               0.0
+               0.0
+               (dead + t)
 
 updateBullets :: Float -> [Bullet] -> [Bullet]
 updateBullets t = filter ((> 0) . bulletLife) . map (updateBullet t)
@@ -84,6 +88,13 @@ updateBullet t (Bullet vel pos life)
     = Bullet vel
              (updatePosition t pos vel sBulletSize)
              (life - t)
+
+updateEffects :: Float -> [Effect] -> [Effect]
+updateEffects t = filter ((> 0) . pulseTime) . map (updateEffect t)
+
+updateEffect :: Float -> Effect -> Effect
+updateEffect t (Pulse pos alpha time)
+    = Pulse (pos + sPulseSpeed `mulSV` toVector alpha) alpha (time - t)
 
 updatePosition :: Float -> Point -> Vector -> Float -> Point
 updatePosition t pos vel size
@@ -101,16 +112,22 @@ moveToScreen (x,y) s
 --- Applying Input
 
 applyInput :: State -> State
-applyInput (State ship asteroids bullets keys gen)
+applyInput (State ship asteroids bullets effects keys gen)
     = State (handleShip keys ship)
             asteroids
             (newBullet ++ bullets)
+            (newEffects ++ effects)
             keys
             gen
 
     where newBullet =
             if (SpecialKey KeySpace) `elem` keys
                 then createBullet ship
+                else []
+
+          newEffects =
+            if (SpecialKey KeyUp) `elem` keys
+                then createPulse ship
                 else []
 
 handleShip :: [Key] -> Ship -> Ship
@@ -142,7 +159,7 @@ handleShip _ ship = ship
 
 updateSpeed :: Vector -> Float -> Vector
 updateSpeed vel alpha
-    | magV vel' > sMaxSpeed = vel
+    | magV vel' > sMaxSpeed = (sMaxSpeed / magV vel') `mulSV` vel'
     | otherwise             = vel'
     where vel' = vel + (sAcceleration `mulSV` toVector alpha)
 
@@ -150,17 +167,26 @@ createBullet :: Ship -> [Bullet]
 createBullet (Ship vel pos alpha reload _)
     | reload < 0
         = let vel' = (vel + sBulletSpeed `mulSV` toVector alpha) in
-          [Bullet vel'
-                  (pos + (20 / sBulletSpeed) `mulSV` vel')
-                   sBulletLife]
+          [ Bullet vel'
+                   (pos + (20 / sBulletSpeed) `mulSV` vel')
+                    sBulletLife
+          ]
     | otherwise  = []
 
+createPulse :: Ship -> [Effect]
+createPulse (Ship _ pos alpha _ dead)
+    | dead == 0
+        = [ Pulse (pos - 5 `mulSV` toVector alpha)
+                  alpha
+                  sPulseTime
+          ]
+    | otherwise = []
 
 --- Checking for Collisions
 
 checkCollisions :: State -> State
-checkCollisions (State ship asteroids bullets keys gen)
-    = State ship' asteroids'' bullets' keys gen
+checkCollisions (State ship asteroids bullets effects keys gen)
+    = State ship' asteroids'' bullets' effects keys gen
     where (ship',asteroids')     = foldl collideShipAsteroids (ship,[]) asteroids
           (bullets',asteroids'') = foldl collideBulletsAsteroids (bullets,[]) asteroids'
 
@@ -168,7 +194,7 @@ collideShipAsteroids :: (Ship,[Asteroid]) -> Asteroid -> (Ship,[Asteroid])
 collideShipAsteroids (ship@(Ship vel pos alpha reload 0.0),asteroids) asteroid
     | collides (shipPosition ship) sShipSize
                (asteroidPosition asteroid) (asteroidSize asteroid)
-    && asteroidExploding asteroid == 0
+      && asteroidExploding asteroid == 0
            = ((Ship vel pos alpha reload sStepSize), explodeAsteroid asteroid ++ asteroids)
     | otherwise = (ship,asteroid : asteroids)
 
@@ -184,7 +210,7 @@ collideAsteroidBullets :: ([Asteroid],[Bullet]) -> Bullet -> ([Asteroid],[Bullet
 collideAsteroidBullets ((asteroid:[]),bullets) bullet
     | collides (asteroidPosition asteroid) (asteroidSize asteroid)
                (bulletPosition bullet) sBulletSize
-    && asteroidExploding asteroid == 0
+      && asteroidExploding asteroid == 0
            = (explodeAsteroid asteroid,bullets)
     | otherwise = (asteroid:[],bullet:bullets)
 
@@ -199,13 +225,14 @@ explodeAsteroid :: Asteroid -> [Asteroid]
 explodeAsteroid (Asteroid vel pos alpha dalpha size _)
     = Asteroid (0.0,0.0) pos 0.0 0.0 size sStepSize
     : newAsteroids
+
     where newAsteroids  = if size > sMinAsteroidSize
-                            then [newAsteroid (-), newAsteroid (+)]
+                            then [newAsteroid (-0.5) , newAsteroid 0.5]
                             else []
-          newAsteroid f = Asteroid ((f 0 1.5, 1.5) * vel)
+          newAsteroid d = Asteroid (sAsteroidSpeedIncrease `mulSV` (rotateV d vel))
                                    pos
                                    alpha
-                                   (f 0 dalpha)
+                                   dalpha
                                    (size / 2)
                                    0.0
 
@@ -214,12 +241,8 @@ explodeAsteroid (Asteroid vel pos alpha dalpha size _)
 
 handleInput :: Event -> State -> State
 handleInput (EventKey key keystate _ _)
-            (State ship asteroids bullets keys gen)
-    = State ship
-            asteroids
-            bullets
-            keys'
-            gen
+            (State ship asteroids bullets effects keys gen)
+    = State ship asteroids bullets effects keys' gen
 
     where keys' =
             case keystate of

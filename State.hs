@@ -1,10 +1,10 @@
-
 -- | Game state
 module State where
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
 import System.Random
+import Settings
 
 -- | The game state.
 data State
@@ -12,6 +12,7 @@ data State
         { stateShip      :: Ship
         , stateAsteroids :: [Asteroid]
         , stateBullets   :: [Bullet]
+        , stateEffects   :: [Effect]
         , stateKeys      :: [Key]
         , randGen        :: StdGen
         }
@@ -23,6 +24,13 @@ data Ship
         , shipRotation   :: Float
         , shipReload     :: Float
         , shipExploding  :: Float
+        }
+
+data Effect
+        = Pulse
+        { pulsePosition  :: Point
+        , pulseAlpha     :: Float
+        , pulseTime      :: Float
         }
 
 data Asteroid
@@ -48,7 +56,8 @@ initialState
                 []
                 []
                 []
-                (mkStdGen 1234)
+                []
+                (mkStdGen sRandGen)
 
     where initialShip = Ship (0,0)
                              (0,0)
