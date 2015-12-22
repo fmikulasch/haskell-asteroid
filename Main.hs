@@ -56,8 +56,11 @@ drawShip (Ship _ (x,y) alpha _ 0.0)
     $ Translate x y
     $ Rotate (-alpha) shipPicture
 
-drawShip (Ship _ pos _ _ dead)
-    = drawExplosion pos dead
+drawShip (Ship _ (x,y) alpha _ dead)
+    = Color white
+    $ Translate x y
+    $ Rotate (-alpha)
+    $ wreckPicture dead
 
 drawExplosion :: Point -> Float -> Picture
 drawExplosion (x,y) t
@@ -67,7 +70,7 @@ drawExplosion (x,y) t
     $ Pictures
     [ explosionPicture x y
     , Scale t t
-    $ Rotate 1.2 (explosionPicture x y)
+    $ Rotate 1.5 (explosionPicture x y)
     ]
 
 drawEffect :: Effect -> Picture
@@ -90,6 +93,28 @@ shipPicture
     , (20,0)
     ]
 
+wreckPicture :: Float -> Picture
+wreckPicture t
+    = Pictures
+    [ Translate 0 (1*t)
+    $ Rotate (1.5 * t)
+    $ Line [(20,0), (5,5)]
+    , Translate 0 (-4*t)
+    $ Rotate (3 * t)
+    $ Line [(5,5), (-10,10)]
+    , Translate (0.5*t) (0.5*t)
+    $ Rotate (0 * t)
+    $ Line [(-10,10), (-4,0)]
+    , Translate 0 (-2*t)
+    $ Rotate (-3 * t)
+    $ Line [(-4,0), (-10,-10)]
+    , Translate (1.5*t) 0
+    $ Line [(-10,-10), (5,-5)]
+    , Translate (-2.2*t) 0
+    $ Rotate (-8 * t)
+    $ Line [(5,-5), (20,0)]
+    ]
+
 asteroidPicture :: Float -> Picture
 asteroidPicture x
     = Scale (x * 1/15) (x * 1/15)
@@ -108,12 +133,12 @@ asteroidPicture x
 
 explosionPicture :: Float -> Float -> Picture
 explosionPicture x y
-    = let x' = x `mod'` 2
-          y' = y `mod'` 2 in
+    = let x' = x `mod'` 3
+          y' = y `mod'` 3 in
     Pictures
     [ Line [from,normalizeV from + from]
     | from <- [ a * b
-              | a <- [(1,3),(4,1),(2,8),(5,5)]
+              | a <- [(1,3 * y'),(4 * x',1),(2 * x',8),(5,5)]
               , b <- [(-1,1),(y',x'),(- y',- 0.4),(1,- y')]
               ]
     ]

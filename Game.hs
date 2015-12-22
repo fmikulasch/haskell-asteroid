@@ -37,16 +37,16 @@ stepState _ Menu
 moveShip :: Float -> Ship -> Ship
 moveShip t (Ship vel pos alpha reload 0.0)
     = Ship vel
-           (updatePosition t pos vel 20)
+           (updatePosition t pos vel sShipSize)
            alpha
            (reload - t)
            0.0
 
-moveShip t (Ship _ pos _ _ dead)
-   = Ship (0.0,0.0)
-          pos
-          0.0
-          1.0
+moveShip t (Ship vel pos alpha reload dead)
+   = Ship vel
+          (updatePosition t pos vel sShipSize)
+          (alpha + reload)
+          reload
           (dead + t)
 
 updateAsteroids :: Float -> [Asteroid] -> Float -> Float -> [Asteroid]
@@ -170,8 +170,8 @@ updateSpeed vel alpha
     where vel' = vel + (sAcceleration `mulSV` toVector alpha)
 
 createBullet :: Ship -> [Bullet]
-createBullet (Ship vel pos alpha reload _)
-    | reload < 0
+createBullet (Ship vel pos alpha reload dead)
+    | reload < 0 && dead == 0
         = let vel' = (vel + sBulletSpeed `mulSV` toVector alpha) in
           [ Bullet vel'
                    (pos + (20 / sBulletSpeed) `mulSV` vel')
@@ -197,11 +197,15 @@ checkCollisions (State ship asteroids bullets effects keys gen)
           (bullets',asteroids'') = foldl collideBulletsAsteroids (bullets,[]) asteroids'
 
 collideShipAsteroids :: (Ship,[Asteroid]) -> Asteroid -> (Ship,[Asteroid])
-collideShipAsteroids (ship@(Ship vel pos alpha reload 0.0),asteroids) asteroid
-    | collides (shipPosition ship) sShipSize
-               (asteroidPosition asteroid) (asteroidSize asteroid)
-      && asteroidExploding asteroid == 0
-           = ((Ship vel pos alpha reload sStepSize), explodeAsteroid asteroid ++ asteroids)
+collideShipAsteroids (ship@(Ship velS posS alphaS reloadS 0.0),asteroids)
+                      asteroid@(Asteroid velA posA alphaA dalphaA sizeA 0.0)
+    | collides posS sShipSize posA sizeA
+           = (Ship ((25 / (sizeA + 20)) `mulSV` velS + (sizeA / 60) `mulSV` velA )
+                    posS
+                    alphaS
+                    (- dalphaA)
+                    sStepSize
+             , explodeAsteroid asteroid ++ asteroids)
     | otherwise = (ship,asteroid : asteroids)
 
 collideShipAsteroids (ship,asteroids) asteroid
