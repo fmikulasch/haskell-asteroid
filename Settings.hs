@@ -26,8 +26,8 @@ sRespawnTime = 7
 -- Ship settings
 sTurnSpeed, sMaxSpeed, sAcceleration, sReloadTime, sShipSize :: Float
 sTurnSpeed = 2.5
-sAcceleration = 3
-sMaxSpeed = 200
+sAcceleration = 2
+sMaxSpeed = 120
 sReloadTime = 0.2
 sShipSize = 11
 

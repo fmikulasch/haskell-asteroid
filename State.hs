@@ -1,59 +1,80 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 -- | Game state
 module State where
 
+import Control.Lens
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
 import System.Random
 import Settings
 
--- | The game state.
-data State
-        = State
-        { stateShip      :: Ship
-        , stateAsteroids :: [Asteroid]
-        , stateBullets   :: [Bullet]
-        , stateEffects   :: [Effect]
-        , stateKeys      :: [Key]
-        , randGen        :: StdGen
-        }
-        | Menu
 
 data Ship
         = Ship
-        { shipVelocity   :: Vector -- Is a Tuple (x,y), defined in Gloss
-        , shipPosition   :: Point  -- Point = Vector
-        , shipRotation   :: Float
-        , shipReload     :: Float
-        , shipExploding  :: Float
+        { _shipVelocity   :: Vector -- Is a Tuple (x,y), defined in Gloss
+        , _shipPosition   :: Point  -- Point = Vector
+        , _shipRotation   :: Float
+        , _shipReload     :: Float
+        , _shipExploding  :: Float
         }
 
 data Effect
         = Pulse
-        { pulsePosition  :: Point
-        , pulseAlpha     :: Float
-        , pulseTime      :: Float
+        { _pulsePosition  :: Point
+        , _pulseAlpha     :: Float
+        , _pulseTime      :: Float
         }
 
 data Asteroid
         = Asteroid
-        { asteroidVelocity  :: Vector
-        , asteroidPosition  :: Point
-        , asteroidRotation  :: Float
-        , asteroidMomentum  :: Float
-        , asteroidSize      :: Float
-        , asteroidExploding :: Float
+        { _asteroidVelocity  :: Vector
+        , _asteroidPosition  :: Point
+        , _asteroidRotation  :: Float
+        , _asteroidMomentum  :: Float
+        , _asteroidSize      :: Float
+        , _asteroidExploding :: Float
+        , _asteroidShape     :: Int
         }
 
 data Bullet
         = Bullet
-        { bulletVelocity :: Vector
-        , bulletPosition :: Point
-        , bulletLife     :: Float
+        { _bulletVelocity :: Vector
+        , _bulletPosition :: Point
+        , _bulletLife     :: Float
         }
 
-initialState :: State
+
+-- | The game state.
+data State
+        = State
+        { _stateType      :: Gametype
+        , _stateShip      :: Ship
+        , _stateAsteroids :: [Asteroid]
+        , _stateBullets   :: [Bullet]
+        , _stateEffects   :: [Effect]
+        , _stateKeys      :: [Key]
+        , _randGen        :: StdGen
+        }
+
+data Gametype
+        = Menu
+        | Game
+        deriving (Eq)
+
+makeLenses ''Ship
+makeLenses ''Effect
+makeLenses ''Asteroid
+makeLenses ''Bullet
+makeLenses ''State
+
+menuState, initialState :: State
+menuState
+        = set stateType Menu initialState
+
 initialState
-        = State initialShip
+        = State Game
+                initialShip
                 []
                 []
                 []

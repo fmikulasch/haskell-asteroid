@@ -1,3 +1,4 @@
+import Control.Lens
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss.Data.Vector
@@ -11,7 +12,7 @@ main
  = play (InWindow "Asteroid" (floor sWidth, floor sHeight) (100, 100))
         sBGColor
         sUpdate
-        Menu
+        menuState
         drawState
         handleInput
         stepState
@@ -20,47 +21,59 @@ main
 ----- Rendering Functions -----
 
 drawState :: State -> Picture
-drawState (State ship asteroids bullets effects keys _)
-    = Pictures
-    $ drawShip ship
-    : stars
-    ++ map drawBullet bullets
-    ++ map drawEffect effects
-    ++ map drawAsteroid asteroids
-
-drawState Menu
+drawState state
+    | state^.stateType == Menu
     = Pictures $
     [ Color white $ Translate (-37) 10 $ Scale 0.3 0.3 $ Text "Play"
     , Color white $ Translate (-50) (-15) $ Scale 0.1 0.1 $ Text "Press any key"
     ] ++ stars
 
+    | otherwise
+    = Pictures
+    $ drawShip (state^.stateShip)
+    : stars
+    ++ map drawBullet (state^.stateBullets)
+    ++ map drawEffect (state^.stateEffects)
+    ++ map drawAsteroid (state^.stateAsteroids)
+
+
 drawAsteroid :: Asteroid -> Picture
-drawAsteroid (Asteroid _ (x,y) alpha _ size 0.0)
+drawAsteroid asteroid
+    | asteroid^.asteroidExploding == 0.0
     = Color (dark white)
     $ Translate x y
-    $ Rotate alpha
-    $ asteroidPicture size
+    $ Rotate (asteroid^.asteroidRotation)
+    $ asteroidPicture (asteroid^.asteroidShape) (asteroid^.asteroidSize)
 
-drawAsteroid (Asteroid _ pos _ _ _ dead)
-    = drawExplosion pos dead
+    | otherwise
+    = drawExplosion (asteroid^.asteroidPosition) (asteroid^.asteroidExploding)
+
+    where (x,y) = asteroid^.asteroidPosition
 
 drawBullet :: Bullet -> Picture
-drawBullet (Bullet vel pos@(x,y) _)
+drawBullet bullet
     = Color white
     $ Translate x y
-    $ Line [(0,0),sBulletLength `mulSV` normalizeV vel]
+    $ Line [(0,0),sBulletLength `mulSV` normalizeV (bullet^.bulletVelocity)]
+
+    where (x,y) = bullet^.bulletPosition
 
 drawShip :: Ship -> Picture
-drawShip (Ship _ (x,y) alpha _ 0.0)
+drawShip ship
+    | dead == 0.0
     = Color white
     $ Translate x y
     $ Rotate (-alpha) shipPicture
 
-drawShip (Ship _ (x,y) alpha _ dead)
+    | otherwise
     = Color white
     $ Translate x y
     $ Rotate (-alpha)
     $ wreckPicture dead
+
+    where (x,y) = ship^.shipPosition
+          alpha = ship^.shipRotation
+          dead  = ship^.shipExploding
 
 drawExplosion :: Point -> Float -> Picture
 drawExplosion (x,y) t
@@ -115,19 +128,49 @@ wreckPicture t
     $ Line [(5,-5), (20,0)]
     ]
 
-asteroidPicture :: Float -> Picture
-asteroidPicture x
+asteroidPicture :: Int -> Float -> Picture
+asteroidPicture 0 x
     = Scale (x * 1/15) (x * 1/15)
     $ Line
     [ (11.0,7.0)
     , (-2.0,12.0)
     , (-11.0,9.0)
-    , (-17.0,-1.0)
+    , (-14.0,-1.0)
     , (-11.0,-13.0)
     , (0.0,-10.0)
     , (9.0,-12.0)
     , (14.0,-3.0)
     , (7.0,2.0)
+    , (11.0,7.0)
+    ]
+
+asteroidPicture 1 x
+    = Scale (x * 1/15) (x * 1/15)
+    $ Line
+    [ (11.0,7.0)
+    , (-4.0,10.0)
+    , (-10.0,9.0)
+    , (-18.0,2.0)
+    , (-9.0,-10.0)
+    , (0.0,-12.0)
+    , (7.0,-10.0)
+    , (14.0,-3.0)
+    , (8.0,3.0)
+    , (11.0,7.0)
+    ]
+
+asteroidPicture _ x
+    = Scale (x * 1/15) (x * 1/15)
+    $ Line
+    [ (11.0,7.0)
+    , (0.0,10.0)
+    , (-4.0,6.0)
+    , (-12.0,2.0)
+    , (-15.0,-5.0)
+    , (-1.0,-12.0)
+    , (7.0,-10.0)
+    , (14.0,-3.0)
+    , (8.0,3.0)
     , (11.0,7.0)
     ]
 
